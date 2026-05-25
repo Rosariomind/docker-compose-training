@@ -1,42 +1,67 @@
-version: "2"
 services:
-    www:
-        build: .
-        ports: 
-            - "8001:80"
-        volumes:
-            - ./www:/var/www/html/
-        links:
-            - db
-        networks:
-            - default
-        depends_on:
-            - db
-    db:
-        image: mysql:5.7.13
-        ports: 
-            - "3306:3306"
-        environment:
-            MYSQL_DATABASE: myDb
-            MYSQL_USER: user
-            MYSQL_PASSWORD: test
-            MYSQL_ROOT_PASSWORD: test
-        volumes:
-            - ./dump:/docker-entrypoint-initdb.d
-            - persistent:/var/lib/mysql
-        networks:
-            - default
-    phpmyadmin:
-        image: phpmyadmin
-        links: 
-            - db:db
-        ports:
-            - 8000:80
-        environment:
-            MYSQL_USER: user
-            MYSQL_PASSWORD: test
-            MYSQL_ROOT_PASSWORD: test
+  www:
+    build: .
+    container_name: training_www
+    ports:
+      - "8001:80"
+    volumes:
+      - ./www:/var/www/html
+    depends_on:
+      - db
+      - postgresql
+    networks:
+      - app-network
 
-            
+  db:
+    image: mysql:5.7.13
+    container_name: training_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: myDb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: test
+      MYSQL_ROOT_PASSWORD: test
+    volumes:
+      - ./dump:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: training_phpmyadmin
+    ports:
+      - "8000:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: user
+      PMA_PASSWORD: test
+      MYSQL_ROOT_PASSWORD: test
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  postgresql:
+    image: postgres:16
+    container_name: training_postgresql
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: myPgDb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: test
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
 volumes:
-    persistent:
+  mysql_data:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

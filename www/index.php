@@ -1,53 +1,95 @@
-<!-- put in ./www directory -->
-
-<html>
- <head>
-  <title>Hello...</title>
-
-  <!-- <meta charset="utf-8">  -->
-
-  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
-  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Docker Compose Training</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Hi! I'm happy</h1>
 
+<h1>Docker Compose Training</h1>
 
-    <?php
-    $conn = mysqli_connect('db', 'user', 'test', 'myDb');
+<h2>Данные из MySQL</h2>
 
-    if (mysqli_connect_errno()) {
-      echo "Failed to connect to MySQL: " . mysqli_connect_error();
-      exit();
-    }
+<?php
+$mysqlHost = 'db';
+$mysqlUser = 'user';
+$mysqlPassword = 'test';
+$mysqlDatabase = 'myDb';
 
-    echo("hhh");
+$mysqlConnection = new mysqli($mysqlHost, $mysqlUser, $mysqlPassword, $mysqlDatabase);
 
-    $query = "SELECT * From Person";
-    $result = mysqli_query($conn, $query);
+if ($mysqlConnection->connect_error) {
+    echo '<p>Ошибка подключения к MySQL: ' . $mysqlConnection->connect_error . '</p>';
+} else {
+    echo '<p>Подключение к MySQL успешно</p>';
 
-    echo '<table class="table table-striped">';
-    echo '<thead><tr><th></th><th>id</th><th>name</th></tr></thead>';
-    while($value = $result->fetch_array())
-    {
-        echo '<tr>';
-        echo '<td><a href="#"><span class="glyphicon glyphicon-search"></span></a></td>';
-        foreach($value as $element){
-            echo '<td>' . $element . '</td>';
+    $mysqlResult = $mysqlConnection->query('SELECT id, name FROM Person');
+
+    if ($mysqlResult) {
+        echo '<table border="1">';
+        echo '<tr><th>ID</th><th>Name</th></tr>';
+
+        while ($row = $mysqlResult->fetch_assoc()) {
+            echo '<tr>';
+            echo '<td>' . htmlspecialchars($row['id']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['name']) . '</td>';
+            echo '</tr>';
         }
 
-        echo '</tr>';
+        echo '</table>';
+
+        $mysqlResult->close();
+    } else {
+        echo '<p>Ошибка запроса MySQL: ' . $mysqlConnection->error . '</p>';
     }
-    echo '</table>';
 
-    $result->close();
+    $mysqlConnection->close();
+}
+?>
 
-    mysqli_close($conn);
+<h2>Данные из PostgreSQL</h2>
 
-    ?>
-    </div>
+<?php
+$postgresHost = 'postgresql';
+$postgresPort = '5432';
+$postgresDatabase = 'myPgDb';
+$postgresUser = 'user';
+$postgresPassword = 'test';
+
+$postgresConnectionString = "host=$postgresHost port=$postgresPort dbname=$postgresDatabase user=$postgresUser password=$postgresPassword";
+
+$postgresConnection = pg_connect($postgresConnectionString);
+
+if (!$postgresConnection) {
+    echo '<p>Ошибка подключения к PostgreSQL</p>';
+} else {
+    echo '<p>Подключение к PostgreSQL успешно</p>';
+
+    $postgresResult = pg_query($postgresConnection, 'SELECT id, name FROM person_pg ORDER BY id');
+
+    if ($postgresResult) {
+        echo '<table border="1">';
+        echo '<tr><th>ID</th><th>Name</th></tr>';
+
+        while ($row = pg_fetch_assoc($postgresResult)) {
+            echo '<tr>';
+            echo '<td>' . htmlspecialchars($row['id']) . '</td>';
+            echo '<td>' . htmlspecialchars($row['name']) . '</td>';
+            echo '</tr>';
+        }
+
+        echo '</table>';
+    } else {
+        echo '<p>Ошибка запроса PostgreSQL: ' . pg_last_error($postgresConnection) . '</p>';
+    }
+
+    pg_close($postgresConnection);
+}
+?>
+
 </body>
 </html>
